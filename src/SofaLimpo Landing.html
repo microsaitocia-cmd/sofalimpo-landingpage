@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SofaLimpo — O sistema dos limpa-sofá autônomos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="styles.css" />
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="sections.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "palette": ["#0a8c8c", "#16312b", "#f1ede2", "#e8a87c"],
+  "font": "Plus Jakarta Sans",
+  "tone": "amigavel",
+  "density": "confortavel",
+  "ctaText": "Começar grátis"
+}/*EDITMODE-END*/;
+
+const PALETTES = {
+  "Verde-água + Coral": ["#0a8c8c", "#16312b", "#f1ede2", "#e8a87c"],
+  "Azul brasileiro": ["#1f5fd6", "#0a1f3d", "#f4f6fa", "#f5b042"],
+  "Roxo confiável": ["#6b4ee8", "#1a1530", "#f4f1f8", "#ffb86b"],
+  "Verde mata": ["#2d6a3e", "#0e1f15", "#f0ede2", "#d97757"],
+  "Preto & laranja": ["#ff6b35", "#0a0a0a", "#f5f1ea", "#ffb86b"],
+};
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  // Apply palette → CSS variables
+  React.useEffect(() => {
+    const p = t.palette;
+    const root = document.documentElement;
+    // p[0] = brand, p[1] = ink, p[2] = bg, p[3] = warm
+    root.style.setProperty("--brand", p[0]);
+    root.style.setProperty("--brand-deep", shade(p[0], -0.18));
+    root.style.setProperty("--brand-soft", mix(p[0], p[2], 0.85));
+    root.style.setProperty("--ink", p[1]);
+    root.style.setProperty("--ink-soft", mix(p[1], p[2], 0.35));
+    root.style.setProperty("--ink-mute", mix(p[1], p[2], 0.55));
+    root.style.setProperty("--bg", p[2]);
+    root.style.setProperty("--bg-soft", mix(p[2], p[1], 0.04));
+    root.style.setProperty("--bg-card", mix(p[2], "#ffffff", 0.5));
+    root.style.setProperty("--line", mix(p[2], p[1], 0.12));
+    root.style.setProperty("--line-soft", mix(p[2], p[1], 0.06));
+    root.style.setProperty("--warm", p[3]);
+    root.style.setProperty("--warm-soft", mix(p[3], p[2], 0.82));
+  }, [t.palette]);
+
+  React.useEffect(() => {
+    document.body.style.fontFamily = `"${t.font}", system-ui, -apple-system, sans-serif`;
+  }, [t.font]);
+
+  React.useEffect(() => {
+    const root = document.documentElement;
+    if (t.density === "compacto") {
+      root.style.setProperty("--section-pad", "64px");
+    } else if (t.density === "amplo") {
+      root.style.setProperty("--section-pad", "128px");
+    } else {
+      root.style.setProperty("--section-pad", "96px");
+    }
+    // re-apply
+    document.querySelectorAll(".section").forEach(s => {
+      s.style.paddingTop = root.style.getPropertyValue("--section-pad");
+      s.style.paddingBottom = root.style.getPropertyValue("--section-pad");
+    });
+  }, [t.density]);
+
+  const tone = t.tone;
+  const ctaText = t.ctaText || "Começar grátis";
+  const ctaShort = tone === "formal" ? "Solicitar acesso" : "Teste grátis";
+
+  return (
+    <React.Fragment>
+      <Nav t={{ cta: ctaText, ctaShort }} />
+      <Hero t={{ cta: ctaText }} />
+      <Features t={{ tone }} />
+      <HowItWorks />
+      <Dashboard />
+      <Calculator />
+      <Pricing t={{ cta: ctaText }} />
+      <FAQ />
+      <CtaFinal t={{ cta: ctaText }} />
+      <Footer />
+
+      <TweaksPanel>
+        <TweakSection label="Visual" />
+        <TweakColor
+          label="Paleta"
+          value={t.palette}
+          options={Object.values(PALETTES)}
+          onChange={(v) => setTweak("palette", v)}
+        />
+        <TweakSelect
+          label="Fonte"
+          value={t.font}
+          options={["Plus Jakarta Sans", "Manrope", "DM Sans", "Instrument Serif"]}
+          onChange={(v) => setTweak("font", v)}
+        />
+        <TweakRadio
+          label="Densidade"
+          value={t.density}
+          options={["compacto", "confortavel", "amplo"]}
+          onChange={(v) => setTweak("density", v)}
+        />
+
+        <TweakSection label="Copy" />
+        <TweakText
+          label="Texto do CTA"
+          value={t.ctaText}
+          onChange={(v) => setTweak("ctaText", v)}
+        />
+        <TweakRadio
+          label="Tom"
+          value={t.tone}
+          options={["formal", "amigavel"]}
+          onChange={(v) => setTweak("tone", v)}
+        />
+      </TweaksPanel>
+    </React.Fragment>
+  );
+}
+
+// Color helpers
+function hexToRgb(hex) {
+  const h = hex.replace("#", "");
+  const v = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const n = parseInt(v, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b].map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, "0")).join("");
+}
+function mix(a, b, t) {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
+}
+function shade(hex, amt) {
+  // amt -1..1 ; negative = darker
+  const [r, g, b] = hexToRgb(hex);
+  const f = amt < 0 ? 0 : 255;
+  const a = Math.abs(amt);
+  return rgbToHex(r + (f - r) * a, g + (f - g) * a, b + (f - b) * a);
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+<style id="__om-edit-overrides"></style>
+</body>
+</html>
